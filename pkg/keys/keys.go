@@ -84,7 +84,7 @@ func (k *Keys) KeysAvailable() bool {
 
 // Sign payload
 func (k *Keys) SignPayload(ctx context.Context, req *externalsigner.SignPayloadRequest) (*externalsigner.SignPayloadResponse, error) {
-
+	klog.Infof("Sign Payload")
 	// TODO switch on SignPayloadRequest Algorithm?
 	privateKey, _ := k.readKeys()
 
@@ -105,6 +105,7 @@ func (k *Keys) SignPayload(ctx context.Context, req *externalsigner.SignPayloadR
 
 // List public keys
 func (k *Keys) ListPublicKeys(ctx context.Context, req *externalsigner.ListPublicKeysRequest) (*externalsigner.ListPublicKeysResponse, error) {
+	klog.Infof("List Public Keys")
 	privateKey, publicKeys := k.readKeys()
 
 	kU, err := getPubKeyBytes(privateKey)
