@@ -67,6 +67,6 @@ func getPublicKeys(path string) map[string][]byte {
 	if err != nil {
 		klog.Fatalf("error opening public key file: %v", err.Error())
 	}
-	result["1"] = data
+	result["a811d89ef50c5f03c30745155ce76eadd117449"] = data
 	return result
 }
