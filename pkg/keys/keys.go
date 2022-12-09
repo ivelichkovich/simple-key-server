@@ -50,6 +50,7 @@ func (k *Keys) readKeys() (*rsa.PrivateKey, map[string][]byte) {
 
 func getPubKeyBytes(pk *rsa.PrivateKey) ([]byte, error) {
 	if pk == nil {
+		klog.Error("error")
 		return nil, fmt.Errorf("No private key!")
 	}
 	return pubKeyPKIX(&pk.PublicKey)
@@ -58,6 +59,7 @@ func getPubKeyBytes(pk *rsa.PrivateKey) ([]byte, error) {
 func pubKeyPKIX(kU *rsa.PublicKey) ([]byte, error) {
 	der, err := x509.MarshalPKIXPublicKey(kU)
 	if err != nil {
+		klog.Error("error")
 		return nil, errors.Wrap(err, "Could not marshal public key")
 	}
 	block := pem.Block{
@@ -71,6 +73,7 @@ func pubKeyPKIX(kU *rsa.PublicKey) ([]byte, error) {
 func keyId(kU *rsa.PublicKey) (string, error) {
 	data, err := pubKeyPKIX(kU)
 	if err != nil {
+		klog.Error("error")
 		return "", errors.Wrap(err, "Could not encode key")
 	}
 	return fmt.Sprintf("%x", sha1.Sum(data)), nil
@@ -110,12 +113,14 @@ func (k *Keys) ListPublicKeys(ctx context.Context, req *externalsigner.ListPubli
 
 	kU, err := getPubKeyBytes(privateKey)
 	if err != nil {
+		klog.Error("error")
 		return nil, errors.Wrap(err, "Failed to get the public part of the private key")
 	}
 
 	// TODO: use the key IDs that're passed in, instead of regenerationg again.
 	kid, err := keyId(&privateKey.PublicKey)
 	if err != nil {
+		klog.Error("error")
 		return nil, errors.Wrap(err, "Failed to generate the kid")
 	}
 
