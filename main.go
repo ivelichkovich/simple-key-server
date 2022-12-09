@@ -29,6 +29,7 @@ func main() {
 	privateKeyPath := flag.String("private-key", "./private-key.rsa", "Path to private key for signing")
 	publicKeyPath := flag.String("public-key", "./key.pub", "Path to public key")
 
+	klog.Infof("private key %v, public key %v", privateKeyPath, publicKeyPath)
 	privateKey := getPrivateKey(*privateKeyPath)
 	publicKeys := getPublicKeys(*publicKeyPath)
 
