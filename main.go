@@ -2,9 +2,11 @@ package main
 
 import (
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"encoding/pem"
 	"flag"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"k8s.io/key-server/pkg/keys"
@@ -13,6 +15,13 @@ import (
 	"net"
 	"os"
 	"syscall"
+)
+
+const (
+	// RSAPrivateKeyBlockType is a possible value for pem.Block.Type.
+	RSAPrivateKeyBlockType = "RSA PRIVATE KEY"
+	// PrivateKeyBlockType is a possible value for pem.Block.Type.
+	PrivateKeyBlockType = "PRIVATE KEY"
 )
 
 func main() {
@@ -52,13 +61,33 @@ func getPrivateKey(path string) *rsa.PrivateKey {
 	if err != nil {
 		klog.Fatalf("error opening private key file: %v", err.Error())
 	}
-	block, _ := pem.Decode(data)
-	parseResult, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		klog.Fatalf("error parsing private key: %v", err.Error())
+
+	var privateKeyPemBlock *pem.Block
+	privateKeyPemBlock, _ = pem.Decode(data)
+
+	var privateKey *rsa.PrivateKey
+	var key interface{}
+	switch privateKeyPemBlock.Type {
+	case RSAPrivateKeyBlockType:
+		klog.Infof("RSA Private Key Block Type")
+		// RSA Private Key in PKCS#1 format
+		privateKey, err = x509.ParsePKCS1PrivateKey(privateKeyPemBlock.Bytes)
+	case PrivateKeyBlockType:
+		klog.Infof("Private Key Block Type")
+		// RSA or ECDSA Private Key in unencrypted PKCS#8 format
+		key, err = x509.ParsePKCS8PrivateKey(privateKeyPemBlock.Bytes)
+		switch key := key.(type) {
+		case *rsa.PrivateKey:
+			privateKey = key
+		default:
+			klog.Errorf("Private Key Parse Error - Private Key Block Type")
+			err = fmt.Errorf("Only rsa private key is expected %s\n", privateKeyPemBlock.Type)
+		}
+	default:
+		klog.Errorf("Private Key Parse Error, unexpected")
+		err = fmt.Errorf("Unexpected private key type %s\n", privateKeyPemBlock.Type)
 	}
-	key := parseResult.(*rsa.PrivateKey)
-	return key
+	return privateKey
 }
 
 func getPublicKeys(path string) map[string][]byte {
@@ -67,6 +96,7 @@ func getPublicKeys(path string) map[string][]byte {
 	if err != nil {
 		klog.Fatalf("error opening public key file: %v", err.Error())
 	}
-	result["a811d89ef50c5f03c30745155ce76eadd117449"] = data
+	kid := fmt.Sprintf("%x", sha1.Sum(data))
+	result[kid] = data
 	return result
 }
